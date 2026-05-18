@@ -1,31 +1,76 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include "secrets.h" // Chama o ficheiro das passwords
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include "secrets.h"
+
+// Monta o link da API usando a chave
+String openWeatherUrl = "http://api.openweathermap.org/data/2.5/weather?q=Fortaleza,BR&units=metric&appid=" + String(OPENWEATHER_API_KEY);
+
+void obterClima() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    
+    Serial.println("Consultando o clima no OpenWeatherMap...");
+    http.begin(openWeatherUrl); 
+    
+    int codigoResposta = http.GET(); 
+
+    if (codigoResposta > 0) {
+      String payload = http.getString();
+      JsonDocument doc; 
+      DeserializationError erro = deserializeJson(doc, payload);
+
+      if (!erro) {
+        float temperatura = doc["main"]["temp"];
+        int umidade = doc["main"]["humidity"];
+        
+        Serial.println("--- DADOS DO CLIMA ---");
+        Serial.print("Temperatura: ");
+        Serial.print(temperatura);
+        Serial.println(" C");
+        
+        Serial.print("Umidade: ");
+        Serial.print(umidade);
+        Serial.println(" %");
+        Serial.println("----------------------");
+      } else {
+        Serial.println("Erro ao traduzir os dados da API.");
+      }
+    } else {
+      Serial.print("Erro na conexão HTTP: ");
+      Serial.println(codigoResposta);
+    }
+    http.end(); 
+  } else {
+    Serial.println("Sem Wi-Fi! Impossível checar o clima.");
+  }
+}
 
 void setup() {
-  // Inicia a comunicação com o computador
   Serial.begin(115200);
   delay(1000); 
 
-  Serial.println("\n--- Desk Buddy: A iniciar sistema de rede ---");
-  Serial.print("Tentando conectar-se com a rede...");
+  Serial.print("\nConectando na rede: ");
   Serial.println(WIFI_SSID);
 
-  // Comando para iniciar a ligação Wi-Fi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  // Fica num ciclo de espera até ligar
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
-  // Quando sair do ciclo o Wi-Fi liga
-  Serial.println("\nSucesso! O ESP32 está online.");
-  Serial.print("Endereço IP: ");
+  Serial.println("\nWiFi Conectado!");
+  Serial.print("IP: ");
   Serial.println(WiFi.localIP());
+  Serial.println();
+
+  // Chama a função do clima logo após conectar
+  obterClima();
 }
 
 void loop() {
-  // O loop fica vazio por agora, estamos apenas a testar a ligação no setup
+  // Deixaremos o loop vazio por enquanto. 
+  // Mais tarde colocaremos um timer aqui para atualizar o clima a cada 10 minutos.
 }
