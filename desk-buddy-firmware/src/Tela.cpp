@@ -54,5 +54,22 @@ void desenharRostoGato() {
 }
 
 void mostrarTemperatura(float temp, int umidade) {
-  // Próxima aula: lógica para desenhar o texto da temperatura na tela
+  // 1. Limpa o topo da tela com um retângulo preto (para não embaralhar os números quando atualizar)
+  tft.fillRect(0, 0, 320, 30, ILI9341_BLACK);
+
+  // 2. Configura a fonte (cor branca, tamanho 2)
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(2);
+  
+  // 3. Escreve a Temperatura no canto superior esquerdo
+  tft.setCursor(10, 10);
+  tft.print("Temp: ");
+  tft.print(temp, 1); // O '1' é para mostrar só uma casa decimal
+  tft.print(" C");
+
+  // 4. Escreve a Umidade no canto superior direito
+  tft.setCursor(180, 10);
+  tft.print("Umid: ");
+  tft.print(umidade);
+  tft.print(" %");
 }
