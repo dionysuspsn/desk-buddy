@@ -1,3 +1,4 @@
+#include <math.h> // Adicione isto no topo
 #include "Tela.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
@@ -72,4 +73,56 @@ void mostrarTemperatura(float temp, int umidade) {
   tft.print("Umid: ");
   tft.print(umidade);
   tft.print(" %");
+}
+// Posição e tamanho do relógio
+const int RELOGIO_CX = 160;
+const int RELOGIO_CY = 180; 
+const int RELOGIO_R = 45;
+
+// Memória para apagar os ponteiros antigos (começam no centro)
+int last_sx = RELOGIO_CX, last_sy = RELOGIO_CY;
+int last_mx = RELOGIO_CX, last_my = RELOGIO_CY;
+int last_hx = RELOGIO_CX, last_hy = RELOGIO_CY;
+
+void inicializarRelogio() {
+  // Desenha o círculo exterior do relógio
+  tft.drawCircle(RELOGIO_CX, RELOGIO_CY, RELOGIO_R, ILI9341_WHITE);
+  tft.drawCircle(RELOGIO_CX, RELOGIO_CY, RELOGIO_R + 1, ILI9341_WHITE);
+  // Ponto central
+  tft.fillCircle(RELOGIO_CX, RELOGIO_CY, 3, ILI9341_WHITE);
+}
+
+void atualizarRelogio(int h, int m, int s) {
+  // 1. Converte o tempo para ângulos (Subtraímos 90 graus para o 0 começar no topo/12h)
+  float s_angle = (s * 6 - 90) * 0.0174533; // 0.0174533 é Pi/180 para converter pra radianos
+  float m_angle = (m * 6 - 90) * 0.0174533;
+  float h_angle = ((h % 12) * 30 + (m * 0.5) - 90) * 0.0174533;
+
+  // 2. Calcula onde fica a ponta de cada ponteiro
+  int sx = RELOGIO_CX + (RELOGIO_R - 5) * cos(s_angle);
+  int sy = RELOGIO_CY + (RELOGIO_R - 5) * sin(s_angle);
+
+  int mx = RELOGIO_CX + (RELOGIO_R - 10) * cos(m_angle);
+  int my = RELOGIO_CY + (RELOGIO_R - 10) * sin(m_angle);
+
+  int hx = RELOGIO_CX + (RELOGIO_R - 20) * cos(h_angle);
+  int hy = RELOGIO_CY + (RELOGIO_R - 20) * sin(h_angle);
+
+  // 3. APAGA os ponteiros velhos desenhando-os de PRETO
+  tft.drawLine(RELOGIO_CX, RELOGIO_CY, last_sx, last_sy, ILI9341_BLACK);
+  tft.drawLine(RELOGIO_CX, RELOGIO_CY, last_mx, last_my, ILI9341_BLACK);
+  tft.drawLine(RELOGIO_CX, RELOGIO_CY, last_hx, last_hy, ILI9341_BLACK);
+
+  // 4. DESENHA os novos ponteiros coloridos
+  tft.drawLine(RELOGIO_CX, RELOGIO_CY, hx, hy, ILI9341_WHITE); // Hora
+  tft.drawLine(RELOGIO_CX, RELOGIO_CY, mx, my, ILI9341_CYAN);  // Minuto
+  tft.drawLine(RELOGIO_CX, RELOGIO_CY, sx, sy, ILI9341_RED);   // Segundo
+
+  // 5. Refaz o pino central para os ponteiros não o cortarem
+  tft.fillCircle(RELOGIO_CX, RELOGIO_CY, 3, ILI9341_WHITE);
+
+  // 6. Atualiza a memória para o próximo segundo
+  last_sx = sx; last_sy = sy;
+  last_mx = mx; last_my = my;
+  last_hx = hx; last_hy = hy;
 }

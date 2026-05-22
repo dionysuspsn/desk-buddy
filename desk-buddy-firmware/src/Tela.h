@@ -12,3 +12,5 @@
 void inicializarTela();
 void desenharRostoGato();
 void mostrarTemperatura(float temp, int umidade);
+void inicializarRelogio();
+void atualizarRelogio(int h, int m, int s);
