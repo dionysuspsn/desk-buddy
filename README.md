@@ -51,15 +51,12 @@ Para compilar este projeto com sucesso, certifique-se de ter as seguintes biblio
 
 ## 📸 Galeria do Projeto
 
-Use esta seção para demonstrar visualmente o DeskBuddy, o circuito e a interface funcionando na tela.
 
 ### Render do Design / Case do Gato
-Para adicionar uma foto, salve a imagem na pasta do seu repositório (por exemplo, crie uma pasta chamada `img` e coloque o arquivo `case.jpg` dentro) e o GitHub vai carregar a imagem automaticamente:
 
 ![Design do Case do Gato](img/case.jpg)
 
 ### Interface do Display TFT
-Para adicionar a foto da tela funcionando, salve a imagem no mesmo esquema (ex: `img/tela_funcionando.jpg`):
 
 ![Interface com Rosto de Gato e Relógio](img/tela_funcionando.jpg)
 
