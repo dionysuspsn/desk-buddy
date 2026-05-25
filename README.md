@@ -58,7 +58,7 @@ Para compilar este projeto com sucesso, certifique-se de ter as seguintes biblio
 
 ### Interface do Display TFT
 
-![Interface com Rosto de Gato e Relógio](img/tela_funcionando.jpg)
+![Interface com Rosto de Gato](img/imagem_2026-05-25_165541235.png)
 
 ---
 
