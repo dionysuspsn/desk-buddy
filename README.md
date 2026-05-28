@@ -54,7 +54,7 @@ Para compilar este projeto com sucesso, certifique-se de ter as seguintes biblio
 
 ### Render do Design / Case do Gato
 
-![Design do Case do Gato](img/case.jpg)
+![Design do Case do Gato](hardware/img/casegato.png)
 
 ### Interface do Display TFT
 
