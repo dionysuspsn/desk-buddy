@@ -2,24 +2,38 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <time.h> // Biblioteca necessária para o relógio
+#include <time.h>
 #include "secrets.h"
 #include "Tela.h"
 
-// Monta o link da API usando a chave secreta
+#define PINO_BOTAO 15
+#define PINO_BUZZER 21
+
 String openWeatherUrl = "http://api.openweathermap.org/data/2.5/weather?q=Fortaleza,BR&units=metric&appid=" + String(OPENWEATHER_API_KEY);
 
-// Variáveis para o cronômetro do clima (atualizar a cada 10 min)
 unsigned long tempoUltimaConsulta = 0; 
-const long intervaloConsulta = 600000; // 600.000 ms = 10 minutos
+const long intervaloConsulta = 600000;
+
+float ultimaTemp = 0.0;
+int ultimaUmid = 0;
+bool climaCarregado = false;
+
+bool modoRelogio = false; 
+bool estadoAnteriorBotao = HIGH;
+
+void bipar() {
+  for (int i = 0; i < 150; i++) {
+    digitalWrite(PINO_BUZZER, HIGH);
+    delayMicroseconds(500);
+    digitalWrite(PINO_BUZZER, LOW);
+    delayMicroseconds(500);
+  }
+}
 
 void obterClima() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    
-    Serial.println("Consultando o clima no OpenWeatherMap...");
     http.begin(openWeatherUrl); 
-    
     int codigoResposta = http.GET(); 
 
     if (codigoResposta > 0) {
@@ -28,91 +42,87 @@ void obterClima() {
       DeserializationError erro = deserializeJson(doc, payload);
 
       if (!erro) {
-        float temperatura = doc["main"]["temp"];
-        int umidade = doc["main"]["humidity"];
+        ultimaTemp = doc["main"]["temp"];
+        ultimaUmid = doc["main"]["humidity"];
+        climaCarregado = true;
         
-        Serial.println("--- DADOS DO CLIMA ---");
-        Serial.print("Temperatura: ");
-        Serial.print(temperatura);
-        Serial.println(" C");
-        Serial.print("Umidade: ");
-        Serial.print(umidade);
-        Serial.println(" %");
-        Serial.println("----------------------");
-        
-        // Manda os dados para a tela TFT 
-        mostrarTemperatura(temperatura, umidade);
-        
-      } else {
-        Serial.println("Erro ao traduzir os dados da API.");
+        if (!modoRelogio) {
+          mostrarTemperatura(ultimaTemp, ultimaUmid);
+        }
       }
-    } else {
-      Serial.print("Erro na conexão HTTP: ");
-      Serial.println(codigoResposta);
     }
     http.end(); 
-  } else {
-    Serial.println("Sem Wi-Fi! Impossível checar o clima.");
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(1000); // Dá um tempo para o Monitor Serial estabilizar
 
-  // --- PARTE EXTRA DA OPÇÃO 2 (LIGA A LUZ DA TELA) ---
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_BUZZER, OUTPUT);
+  digitalWrite(PINO_BUZZER, LOW);
+
   pinMode(32, OUTPUT);       
   digitalWrite(32, HIGH);    
-  // --------------------------------------------------
 
-  // 1. Inicializa o hardware da tela, desenha o gato e a base do relógio
   inicializarTela();
-  desenharRostoGato();
-  inicializarRelogio();
 
-  // 2. Conecta ao Wi-Fi
   Serial.print("\nConectando na rede: ");
-  Serial.println(WIFI_SSID);
-
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
-  Serial.println("\nWiFi Conectado!");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
-
-  // 3. Configura a hora direto da internet.
-  // Fuso horário UTC-3 (são -10800 segundos em relação a Londres)
   configTime(-10800, 0, "pool.ntp.org");
-
-  // 4. Puxa a temperatura pela primeira vez logo após conectar
   obterClima();
+
+  desenharRostoGato();
+  if (climaCarregado) {
+    mostrarTemperatura(ultimaTemp, ultimaUmid);
+  }
 }
 
 void loop() {
-  // Pega o tempo atual do relógio interno do ESP32
   unsigned long tempoAtual = millis();
 
-  // --- CRONÓMETRO DO CLIMA (A cada 10 minutos) ---
+  // --- BOTÃO E BUZZER ---
+  bool estadoAtualBotao = digitalRead(PINO_BOTAO);
+  
+  if (estadoAtualBotao == LOW && estadoAnteriorBotao == HIGH) {
+    delay(50); // Debounce
+    if (digitalRead(PINO_BOTAO) == LOW) {
+      
+      bipar(); 
+      modoRelogio = !modoRelogio; 
+      limparTela(); 
+      
+      if (!modoRelogio) {
+        desenharRostoGato();
+        if (climaCarregado) {
+          mostrarTemperatura(ultimaTemp, ultimaUmid);
+        }
+      }
+    }
+  }
+  estadoAnteriorBotao = estadoAtualBotao;
+
+  // --- ATUALIZAÇÃO DO CLIMA ---
   if (tempoAtual - tempoUltimaConsulta >= intervaloConsulta) {
-    tempoUltimaConsulta = tempoAtual; // Reseta o cronômetro
-    obterClima(); // Busca e desenha a nova temperatura
+    tempoUltimaConsulta = tempoAtual; 
+    obterClima(); 
   }
 
-  // --- CRONÓMETRO DO RELÓGIO (A cada 1 segundo) ---
+  // --- ATUALIZAÇÃO DO RELÓGIO DIGITAL ---
   static unsigned long ultimoSegundo = 0;
   if (tempoAtual - ultimoSegundo >= 1000) {
     ultimoSegundo = tempoAtual;
 
-    // Pega a hora da placa e envia para a tela atualizar os ponteiros
     struct tm timeinfo;
     if (getLocalTime(&timeinfo)) {
-      atualizarRelogio(timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      if (modoRelogio) {
+        desenharRelogioDigital(timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      }
     }
   }
 }

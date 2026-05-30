@@ -8,9 +8,9 @@
 #define TFT_SCK  18
 #define TFT_RST  22 
 
-// Declaração das funções para que o main as conheça
+// Funções do sistema de tela
 void inicializarTela();
+void limparTela();
 void desenharRostoGato();
 void mostrarTemperatura(float temp, int umidade);
-void inicializarRelogio();
-void atualizarRelogio(int h, int m, int s);
+void desenharRelogioDigital(int h, int m, int s);
